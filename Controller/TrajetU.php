@@ -30,7 +30,7 @@ class TrajetU {
         }
     }
 
-    public function supprimerTrajet($id) {
+  /*  public function supprimerTrajet($id) {
         $sql = "DELETE FROM trajet WHERE id = :id";
         $db = config::getConnexion();
         try {
@@ -40,7 +40,26 @@ class TrajetU {
         } catch (Exception $e) {
             die('Erreur: ' . $e->getMessage());
         }
+    }*/
+    public function supprimerTrajet($id) {
+        $db = config::getConnexion();
+        try {
+            // Supprimer les réservations associées
+            $sql = "DELETE FROM reservation WHERE trajet_id = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            
+            // Supprimer le trajet
+            $sql = "DELETE FROM trajet WHERE id = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+        } catch (Exception $e) {
+            die('Erreur: ' . $e->getMessage());
+        }
     }
+    
     public function ajouterTrajet($conducteur_id, $point_depart, $point_arrivee, $date_heure_depart, $nombre_places_disponibles, $prix) {
         $sql = "INSERT INTO trajet (conducteur_id, point_depart, point_arrivee, date_heure_depart, nombre_places_disponibles, prix)
                 VALUES (:conducteur_id, :point_depart, :point_arrivee, :date_heure_depart, :nombre_places_disponibles, :prix)";
@@ -132,7 +151,7 @@ class TrajetU {
                     $row['date_heure_depart'],
                     $row['nombre_places_disponibles'],
                     $row['prix'],
-                    $this->estReserve($row['id']) // Vérifiez si le trajet est réservé
+                    $this->estReserve($row['id']) // Ajouter l'information sur la réservation// Vérifiez si le trajet est réservé
                 );
             }
             return $trajets;
@@ -155,6 +174,26 @@ class TrajetU {
             die('Erreur: ' . $e->getMessage());
         }
     }
+    
+    
+    public function afficherTrajetsReserves($conducteur_id) {
+        $sql = "SELECT t.id, t.conducteur_id, t.point_depart, t.point_arrivee, t.date_heure_depart, 
+                       t.nombre_places_disponibles, t.prix
+                FROM trajet t
+                INNER JOIN reservation r ON t.id = r.trajet_id
+                WHERE t.conducteur_id = :conducteur_id";
+        $db = config::getConnexion();
+        try {
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':conducteur_id', $conducteur_id);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            die('Erreur: ' . $e->getMessage());
+        }
+    }
+    
+    
 
 }
 ?>
